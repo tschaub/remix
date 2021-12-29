@@ -40,7 +40,7 @@ This might happen if you've added `ignore-scripts = true` to your `npm` configur
 
 We're going to make a new route to render at the "/posts" URL. Before we do that, let's link to it.
 
-💿 Add a link to posts in `app/root.tsx`
+💿 Add a link to posts in `app/routes/index.tsx`
 
 ```tsx
 <Link to="/posts">Posts</Link>
@@ -190,15 +190,15 @@ Hey, that's pretty cool. We get a pretty solid degree of type safety even over a
 
 A solid practice is to create a module that deals with a particular concern. In our case it's going to be reading and writing posts. Let's set that up now and add a `getPosts` export to our module.
 
-💿 Create `app/post.ts`
+💿 Create `app/post.server.ts`
 
 ```sh
-touch app/post.ts
+touch app/post.server.ts
 ```
 
 We're mostly gonna copy/paste it from our route:
 
-```tsx filename=app/post.ts
+```tsx filename=app/post.server.ts
 export type Post = {
   slug: string;
   title: string;
@@ -223,8 +223,8 @@ export function getPosts() {
 
 ```tsx filename=app/routes/posts/index.tsx
 import { Link, useLoaderData } from "remix";
-import { getPosts } from "~/post";
-import type { Post } from "~/post";
+import { getPosts } from "~/post.server";
+import type { Post } from "~/post.server";
 
 export const loader = () => {
   return getPosts();
@@ -298,7 +298,7 @@ We'll need a node module for this:
 npm add front-matter
 ```
 
-```tsx filename=app/post.ts lines=[1-3,11,13-28]
+```tsx filename=app/post.server.ts lines=[1-3,11,13-28]
 import path from "path";
 import fs from "fs/promises";
 import parseFrontMatter from "front-matter";
@@ -344,7 +344,7 @@ Since we're reading in a file, the type system has no idea what's in there, so w
 npm add tiny-invariant
 ```
 
-```tsx filename=app/post.ts lines=[4,11-13,17-21,33-36]
+```tsx filename=app/post.server.ts lines=[4,11-13,17-21,33-36]
 import path from "path";
 import fs from "fs/promises";
 import parseFrontMatter from "front-matter";
@@ -461,9 +461,9 @@ Now let's actually read the post from the file system.
 
 💿 Add a `getPost` function to our post module
 
-Put this function anywhere in the `app/post.ts` module:
+Put this function anywhere in the `app/post.server.ts` module:
 
-```tsx filename=app/post.ts lines=[2,4]
+```tsx filename=app/post.server.ts lines=[2,4]
 // ...
 export async function getPost(slug: string) {
   const filepath = path.join(postsPath, slug + ".md");
@@ -482,7 +482,7 @@ export async function getPost(slug: string) {
 ```tsx filename=app/routes/posts/$slug.tsx lines=[3,4,9,10,14,17]
 import { useLoaderData } from "remix";
 import type { LoaderFunction } from "remix";
-import { getPost } from "~/post";
+import { getPost } from "~/post.server";
 import invariant from "tiny-invariant";
 
 export const loader: LoaderFunction = async ({
@@ -516,7 +516,7 @@ npm add marked
 npm add @types/marked
 ```
 
-```tsx filename=app/post.ts lines=[5,11,18,19]
+```tsx filename=app/post.server.ts lines=[5,11,18,19]
 import path from "path";
 import fs from "fs/promises";
 import parseFrontMatter from "front-matter";
@@ -567,8 +567,8 @@ touch app/routes/admin.tsx
 
 ```tsx filename=app/routes/admin.tsx
 import { Link, useLoaderData } from "remix";
-import { getPosts } from "~/post";
-import type { Post } from "~/post";
+import { getPosts } from "~/post.server";
+import type { Post } from "~/post.server";
 
 export const loader = () => {
   return getPosts();
@@ -628,8 +628,8 @@ em {
 
 ```tsx filename=app/routes/admin.tsx lines=[4,6-8]
 import { Link, useLoaderData } from "remix";
-import { getPosts } from "~/post";
-import type { Post } from "~/post";
+import { getPosts } from "~/post.server";
+import type { Post } from "~/post.server";
 import adminStyles from "~/styles/admin.css";
 
 export const links = () => {
@@ -756,11 +756,11 @@ If you love HTML like us, you should be getting pretty excited. If you've been d
 
 All you really need for a feature like this is a form to get data from the user and a backend action to handle it. And in Remix, that's all you have to do, too.
 
-Let's create the essential code that knows how to save a post first in our `post.ts` module.
+Let's create the essential code that knows how to save a post first in our `post.server.ts` module.
 
-💿 Add `createPost` anywhere inside of `app/post.ts`
+💿 Add `createPost` anywhere inside of `app/post.server.ts`
 
-```tsx filename=app/post.ts
+```tsx filename=app/post.server.ts
 // ...
 export async function createPost(post) {
   const md = `---\ntitle: ${post.title}\n---\n\n${post.markdown}`;
@@ -776,7 +776,7 @@ export async function createPost(post) {
 
 ```tsx filename=app/routes/admin/new.tsx lines=[1,2,4-14]
 import { redirect, Form } from "remix";
-import { createPost } from "~/post";
+import { createPost } from "~/post.server";
 
 export const action = async ({ request }) => {
   const formData = await request.formData();
@@ -803,7 +803,7 @@ TypeScript is mad again, let's add some types.
 
 💿 Add the types to both files we changed
 
-```tsx filename=app/post.ts lines=[2-6,8]
+```tsx filename=app/post.server.ts lines=[2-6,8]
 // ...
 type NewPost = {
   title: string;
@@ -826,7 +826,7 @@ export async function createPost(post: NewPost) {
 ```tsx filename=app/routes/admin/new.tsx lines=[2,5]
 import { Form, redirect } from "remix";
 import type { ActionFunction } from "remix";
-import { createPost } from "~/post";
+import { createPost } from "~/post.server";
 
 export const action: ActionFunction = async ({
   request
